@@ -1,0 +1,16 @@
+## Title: |cffFF008CKitnUI|r |cffffffffLite|r
+## Notes: Standalone profile installer for KitnUI (no ElvUI required).
+## Author: Bitebtw
+## Version: @project-version@
+## SavedVariables: KitnUILiteDB
+## Interface: 120000, 120001
+## AddonCompartmentFunc: KitnUI_Lite_AddonCompartmentFunc
+## IconTexture: Interface\Icons\INV_Misc_Gift_05
+## Category-enUS: |cffFF008CKitn|rUI
+## X-Curse-Project-ID: 1481276
+## X-Wago-ID: nKW3brKE
+
+Core.lua
+Installer.lua
+Data.lua
+Setup.lua

@@ -1,0 +1,10 @@
+package-as: KitnUI_Lite
+
+changelog-title: KitnUI Lite
+
+ignore:
+  - "*.png"
+  - extract_profiles.py
+  - profiles_output.lua
+  - .pkgmeta
+  - CHANGELOG.md
