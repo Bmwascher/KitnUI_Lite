@@ -17,7 +17,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 
 | Addon | Profile Type |
 |---|---|
-| Blizzard Edit Mode | Action bar & HUD layout |
+| Blizzard Edit Mode | HUD layout, Buffs & Debuffs Positioning, etc. |
 | Unhalted Unit Frames | Colored / Dark variants |
 | Grid2 | Colored / Dark variants |
 | Details! Damage Meter | Meter layout & appearance |
