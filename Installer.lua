@@ -13,7 +13,7 @@ local installerFrame = nil
 local currentPage = 1
 
 -- Theme colors
-local ACCENT = { 1.0, 0.0, 0.55 }        -- #FF008C
+local ACCENT = { 1.0, 0.0, 0.55 }        -- #FF008C :)
 local BG_MAIN = { 0.05, 0.05, 0.05, 0.92 }
 local BG_SIDEBAR = { 0.04, 0.04, 0.04, 0.95 }
 local BG_BUTTON = { 0.08, 0.08, 0.08, 1 }
@@ -224,7 +224,7 @@ local function GetPages()
                 local variants = {
                     { key = "Ayije_CDM_Caster", label = "Caster" },
                     { key = "Ayije_CDM_Melee", label = "Melee" },
-                    { key = "Ayije_CDM_DoubleResource", label = "Double Resource" },
+                    { key = "Ayije_CDM_DoubleResource", label = "Healer" },
                 }
                 local btnWidth = 150
                 local btnSpacing = 8
