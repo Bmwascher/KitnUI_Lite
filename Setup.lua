@@ -443,6 +443,39 @@ setupFunctions["MRT"] = function(addonKey, import)
 end
 
 ------------------------------------------------------------
+-- KitnEssentials (AceDB - direct profile table write)
+-- Uses KitnEssentialsAPI:ImportProfile() if addon is loaded,
+-- otherwise writes directly to KitnEssentialsDB.profiles
+------------------------------------------------------------
+
+setupFunctions["KitnEssentials"] = function(addonKey, import)
+    if import then
+        if not HasData(addonKey) then
+            print(ns.title .. ": No KitnEssentials data found. Add your profile string to Data.lua.")
+            return
+        end
+
+        -- If KitnEssentials is loaded, use its API for a live import
+        if KitnEssentialsAPI and KitnEssentialsAPI.ImportProfile then
+            KitnEssentialsAPI:ImportProfile(ns.data[addonKey], ns.profileName)
+        else
+            -- Write directly to SavedVariables for next reload
+            KitnEssentialsDB = KitnEssentialsDB or { profiles = {} }
+            KitnEssentialsDB.profiles = KitnEssentialsDB.profiles or {}
+            KitnEssentialsDB.profiles[ns.profileName] = ns.data[addonKey]
+        end
+
+        CompleteSetup(addonKey)
+        return
+    end
+
+    -- Load: activate the profile if it exists
+    if KitnEssentialsAPI and KitnEssentialsAPI.SetProfile then
+        KitnEssentialsAPI:SetProfile(ns.profileName)
+    end
+end
+
+------------------------------------------------------------
 -- BasicMinimap (AceDB - direct profile table write)
 ------------------------------------------------------------
 

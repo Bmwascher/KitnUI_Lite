@@ -4,6 +4,16 @@ ns.title = "|cffFF008CKitn|r|cffffffffUI|r"
 ns.profileName = "KitnUI"
 ns.version = C_AddOns.GetAddOnMetadata(addonName, "Version")
 
+------------------------------------------------------------
+-- Register media with LibSharedMedia (if available)
+------------------------------------------------------------
+
+local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+if LSM then
+    LSM:Register("font", "Expressway", "Interface\\AddOns\\KitnUI_Lite\\Media\\Fonts\\Expressway.TTF")
+    LSM:Register("statusbar", "KitnUI", "Interface\\AddOns\\KitnUI_Lite\\Media\\Statusbars\\KitnUI")
+end
+
 -- Saved variables (initialized in ADDON_LOADED)
 ns.db = nil
 
@@ -108,6 +118,12 @@ KitnCommands["reset"] = function()
     ReloadUI()
 end
 
+KitnCommands["version"] = function()
+    print(string.format("|cffffffffKitnUI Lite version %s|r", ns.version or "?"))
+end
+KitnCommands["ver"] = KitnCommands["version"]
+KitnCommands["v"] = KitnCommands["version"]
+
 -- Slash commands
 SLASH_KITN1 = "/kitn"
 SLASH_KITN2 = "/kitnui"
@@ -123,6 +139,13 @@ SlashCmdList["KITN"] = function(msg)
         print("   |cffff8800Warning: This will overwrite personal customizations|r")
         print("  /kitn load     - Apply installed profiles to this character")
         print("  /kitn reset    - Reset installer state (does not remove addon profiles)")
+        print("  /kitn version  - Show addon version")
+        -- Print help lines registered by other Kitn addons (e.g. KitnEssentials)
+        if KitnHelpLines then
+            for _, line in ipairs(KitnHelpLines) do
+                print(line)
+            end
+        end
     else
         print(ns.title .. ": Unknown command '" .. msg .. "'. Type |cffFF008C/kitn|r for help.")
     end

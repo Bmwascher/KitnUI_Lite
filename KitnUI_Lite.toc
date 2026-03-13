@@ -1,4 +1,4 @@
-## Title: |cffFF008CKitnUI|r |cffffffffLite|r
+## Title: |cffFF008CKitn|r|cffffffffUI Lite|r
 ## Notes: Standalone profile installer for KitnUI (no ElvUI required).
 ## Author: Bitebtw
 ## Version: @project-version@

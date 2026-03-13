@@ -5,7 +5,7 @@ local _, ns = ...
 ------------------------------------------------------------
 
 local FRAME_WIDTH = 560
-local FRAME_HEIGHT = 480
+local FRAME_HEIGHT = 504
 local SIDEBAR_WIDTH = 195
 local NAV_HEIGHT = 50
 
@@ -13,18 +13,18 @@ local installerFrame = nil
 local currentPage = 1
 
 -- Theme colors
-local ACCENT = { 1.0, 0.0, 0.55 }        -- #FF008C :)
-local BG_MAIN = { 0.05, 0.05, 0.05, 0.92 }
-local BG_SIDEBAR = { 0.04, 0.04, 0.04, 0.95 }
-local BG_BUTTON = { 0.08, 0.08, 0.08, 1 }
-local BG_BUTTON_HOVER = { 0.14, 0.14, 0.14, 1 }
-local BG_PROGRESS = { 0.06, 0.06, 0.06, 1 }
+local ACCENT = { 1.0, 0.0, 0.549 }       -- #FF008C (KitnUI pink)
+local BG_MAIN = { 0.0627, 0.0627, 0.0627, 0.92 }
+local BG_SIDEBAR = { 0.0314, 0.0314, 0.0314, 0.95 }
+local BG_BUTTON = { 0.0902, 0.0902, 0.0902, 1 }
+local BG_BUTTON_HOVER = { 0.1804, 0.1804, 0.1804, 1 }
+local BG_PROGRESS = { 0.0627, 0.0627, 0.0627, 1 }
 local TEXT_NORMAL = { 0.65, 0.65, 0.65 }
-local TEXT_BRIGHT = { 0.9, 0.9, 0.9 }
-local TEXT_DONE = { 0.3, 1, 0.3 }
+local TEXT_BRIGHT = { 0.902, 0.902, 0.902 }
+local TEXT_DONE = { 0.30, 0.80, 0.40 }
 
 -- Font sizes
-local FONT = "Fonts\\FRIZQT__.TTF"
+local FONT = "Interface\\AddOns\\KitnUI_Lite\\Media\\Fonts\\Expressway.TTF"
 local FONT_TITLE = 18
 local FONT_SUBTITLE = 16
 local FONT_BODY = 13
@@ -76,6 +76,7 @@ end
 ------------------------------------------------------------
 -- Forward declarations (used inside GetPages setup closures)
 ------------------------------------------------------------
+local GetPages
 local ShowOption2
 local UpdateStepButtons
 
@@ -132,7 +133,7 @@ end
 -- Installer page definitions
 ------------------------------------------------------------
 
-local function GetPages()
+GetPages = function()
     return {
         {
             title = "Welcome",
@@ -260,6 +261,11 @@ local function GetPages()
             title = "MRT",
             addon = "MRT",
             setup = SimpleInstallPage("Method Raid Tools", "Import the KitnUI profile for MRT.", "MRT"),
+        },
+        {
+            title = "KitnEssentials",
+            addon = "KitnEssentials",
+            setup = SimpleInstallPage("KitnEssentials", "Import the KitnUI profile for KitnEssentials.", "KitnEssentials"),
         },
         {
             title = "BasicMinimap",

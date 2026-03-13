@@ -38,6 +38,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 - `/kitn load` — Apply installed profiles to this character
 - `/kitn reset` — Reset installer state
 
-## Looking for an ElvUI version?
+## Related Addons
 
-Check out **KitnUI** *(coming soon)* for the full ElvUI-based installer experience.
+- **KitnEssentials** — Standalone combat, QoL, and skinning modules
+- **KitnUI** — ElvUI profile installer with Dark and Color variants
