@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/bmwas/Documents/!KitnUI Core/Midnight 12.0/KitnUI_Lite/**)",
+      "Bash(awk 'NR==923' '/c/Users/bmwas/Documents/!KitnUI Core/Midnight 12.0/KitnUI_Lite/Data.lua')",
+      "Bash(grep -c '\\\\\\\\')",
+      "Bash(tr -cd '\\\\\\\\')"
+    ]
+  }
+}
