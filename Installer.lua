@@ -22,6 +22,7 @@ local BG_PROGRESS = { 0.0627, 0.0627, 0.0627, 1 }
 local TEXT_NORMAL = { 0.65, 0.65, 0.65 }
 local TEXT_BRIGHT = { 0.902, 0.902, 0.902 }
 local TEXT_DONE = { 0.30, 0.80, 0.40 }
+local TEXT_UPDATED = { 1.0, 0.35, 0.35 }
 
 -- Font sizes
 local FONT = "Interface\\AddOns\\KitnUI_Lite\\Media\\Fonts\\Expressway.TTF"
@@ -152,8 +153,14 @@ GetPages = function()
                     content.option1:SetScript("OnClick", function() ns:LoadProfiles() end)
                 elseif hasProfiles and isLoaded then
                     -- Returning character: already set up
-                    content.desc1:SetText("This character is already set up. You can re-install or update individual profiles by stepping through the pages.")
-                    content.desc2:SetText("Click |cff00ff00Continue|r to review or update your profiles.")
+                    local updated = ns:GetUpdatedProfiles()
+                    if #updated > 0 then
+                        content.desc1:SetText("Profile updates are available! Look for |cffff5959red|r items in the sidebar.")
+                        content.desc2:SetText("Click |cff00ff00Continue|r to review and re-install updated profiles.")
+                    else
+                        content.desc1:SetText("This character is already set up. You can re-install or update individual profiles by stepping through the pages.")
+                        content.desc2:SetText("Click |cff00ff00Continue|r to review or update your profiles.")
+                    end
                 else
                     -- Fresh install: no profiles exist yet
                     content.desc1:SetText("This will walk you through setting up your UI addons with pre-configured profiles. Each step lets you install a profile for a specific addon.")
@@ -459,11 +466,15 @@ end
 UpdateStepButtons = function(pages)
     if not installerFrame then return end
     for i, btn in ipairs(installerFrame.stepButtons) do
+        local addonKey = pages[i] and pages[i].addon
         if i == currentPage then
             btn.text:SetTextColor(ACCENT[1], ACCENT[2], ACCENT[3])
             btn.indicator:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3])
             btn.indicator:Show()
-        elseif ns.db.profiles and ns.db.profiles[pages[i] and pages[i].addon] then
+        elseif addonKey and ns:IsProfileUpdated(addonKey) then
+            btn.text:SetTextColor(unpack(TEXT_UPDATED))
+            btn.indicator:Hide()
+        elseif ns.db.profiles and ns.db.profiles[addonKey] then
             btn.text:SetTextColor(unpack(TEXT_DONE))
             btn.indicator:Hide()
         else
@@ -612,7 +623,10 @@ local function CreateInstallerFrame()
         end)
         btn:SetScript("OnLeave", function()
             if i ~= currentPage then
-                if ns.db.profiles and ns.db.profiles[pages[i] and pages[i].addon] then
+                local key = pages[i] and pages[i].addon
+                if key and ns:IsProfileUpdated(key) then
+                    text:SetTextColor(unpack(TEXT_UPDATED))
+                elseif ns.db.profiles and ns.db.profiles[key] then
                     text:SetTextColor(unpack(TEXT_DONE))
                 else
                     text:SetTextColor(unpack(TEXT_NORMAL))

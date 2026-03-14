@@ -31,12 +31,28 @@ local variantBase = {
 }
 ns.variantBase = variantBase
 
+-- Simple checksum of a data string/table for change detection
+local function DataChecksum(addonKey)
+    local d = ns.data[addonKey]
+    if not d then return 0 end
+    if type(d) == "string" then return #d end
+    if type(d) == "table" then
+        -- Sum lengths of all string values (e.g. BlizzardCDM per-spec tables)
+        local sum = 0
+        for _, v in pairs(d) do
+            if type(v) == "string" then sum = sum + #v end
+        end
+        return sum
+    end
+    return 0
+end
+
 local function CompleteSetup(addonKey)
     ns.db.profiles = ns.db.profiles or {}
-    ns.db.profiles[addonKey] = true
+    ns.db.profiles[addonKey] = DataChecksum(addonKey)
     -- Also mark the base addon so sidebar shows green
     if variantBase[addonKey] then
-        ns.db.profiles[variantBase[addonKey]] = true
+        ns.db.profiles[variantBase[addonKey]] = DataChecksum(addonKey)
     end
     ns.db.version = ns.version
     ns.db.installedVersion = ns.version
@@ -52,6 +68,28 @@ local function HasData(addonKey)
     if type(d) == "string" and strtrim(d) == "" then return false end
     if type(d) == "table" and not next(d) then return false end
     return true
+end
+
+-- Check if a profile's data has changed since it was last installed
+function ns:IsProfileUpdated(addonKey)
+    if not self.db or not self.db.profiles then return false end
+    local stored = self.db.profiles[addonKey]
+    if not stored then return false end
+    -- Legacy entries stored as `true` are always considered updated
+    if stored == true then return true end
+    return HasData(addonKey) and DataChecksum(addonKey) ~= stored
+end
+
+-- Returns list of addon keys that have updated data since last install
+function ns:GetUpdatedProfiles()
+    local updated = {}
+    if not self.db or not self.db.profiles then return updated end
+    for addonKey in pairs(self.db.profiles) do
+        if self:IsProfileUpdated(addonKey) then
+            updated[#updated + 1] = addonKey
+        end
+    end
+    return updated
 end
 
 ------------------------------------------------------------
@@ -125,21 +163,19 @@ setupFunctions["UnhaltedUnitFrames"] = function(addonKey, import)
         return
     end
 
-    if not UUFDB or not UUFDB.profiles or not UUFDB.profiles[targetName] then return end
+    if not UUFDB or not UUFDB.profiles then return end
     -- When called from LoadProfiles, addonKey is the base "UnhaltedUnitFrames";
     -- find which variant was actually installed
-    local data = ns.data[addonKey]
-    if not data then
+    if not UUFDB.profiles[targetName] then
         for _, variant in ipairs({"UnhaltedUnitFrames_Colored", "UnhaltedUnitFrames_Dark"}) do
-            if ns.db.profiles[variant] and ns.data[variant] then
-                data = ns.data[variant]
+            if ns.db.profiles[variant] and UUFDB.profiles[uufProfileNames[variant] or ns.profileName] then
                 targetName = uufProfileNames[variant] or ns.profileName
                 break
             end
         end
     end
-    if not data then return end
-    UUFG:ImportUUF(data, targetName)
+    if not UUFDB.profiles[targetName] then return end
+    UUFG.db:SetProfile(targetName)
 end
 setupFunctions["UnhaltedUnitFrames_Colored"] = setupFunctions["UnhaltedUnitFrames"]
 setupFunctions["UnhaltedUnitFrames_Dark"] = setupFunctions["UnhaltedUnitFrames"]

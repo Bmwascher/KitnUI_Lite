@@ -2,7 +2,15 @@ local addonName, ns = ...
 
 ns.title = "|cffFF008CKitn|r|cffffffffUI|r"
 ns.profileName = "KitnUI"
-ns.version = C_AddOns.GetAddOnMetadata(addonName, "Version")
+do
+    local v = C_AddOns.GetAddOnMetadata(addonName, "Version")
+    -- @project-version@ is a packager token; fall back to TOC X-Manual-Version or "dev"
+    if not v or v:find("@") then
+        v = C_AddOns.GetAddOnMetadata(addonName, "X-Manual-Version") or "dev"
+    end
+    -- Strip leading "v" so callers can prefix their own consistently
+    ns.version = v:gsub("^v", "")
+end
 
 ------------------------------------------------------------
 -- Register media with LibSharedMedia (if available)
@@ -124,6 +132,20 @@ end
 KitnCommands["ver"] = KitnCommands["version"]
 KitnCommands["v"] = KitnCommands["version"]
 
+KitnCommands["slash"] = function()
+    print(ns.title .. " — All slash commands:")
+    print("  /kitn install  - Open the installer to import profiles")
+    print("  /kitn load     - Apply installed profiles to this character")
+    print("  /kitn reset    - Reset installer state (does not remove addon profiles)")
+    print("  /kitn version  - Show addon version")
+    -- Print extended slash commands registered by other Kitn addons
+    if KitnSlashLines then
+        for _, line in ipairs(KitnSlashLines) do
+            print(line)
+        end
+    end
+end
+
 -- Slash commands
 SLASH_KITN1 = "/kitn"
 SLASH_KITN2 = "/kitnui"
@@ -140,12 +162,10 @@ SlashCmdList["KITN"] = function(msg)
         print("  /kitn load     - Apply installed profiles to this character")
         print("  /kitn reset    - Reset installer state (does not remove addon profiles)")
         print("  /kitn version  - Show addon version")
-        -- Print help lines registered by other Kitn addons (e.g. KitnEssentials)
-        if KitnHelpLines then
-            for _, line in ipairs(KitnHelpLines) do
-                print(line)
-            end
+        if C_AddOns.DoesAddOnExist("KitnEssentials") then
+            print("  /kes           - Open KitnEssentials settings")
         end
+        print("  /kitn slash    - View all available Kitn slash commands")
     else
         print(ns.title .. ": Unknown command '" .. msg .. "'. Type |cffFF008C/kitn|r for help.")
     end
@@ -185,8 +205,14 @@ frame:SetScript("OnEvent", function(self, event, arg1)
             StaticPopupDialogs["KITNUI_UPDATE_AVAILABLE"] = {
                 text = ns.title .. " has been updated (v" .. ns.db.installedVersion .. " -> v" .. ns.version .. "). Open the installer to apply changes?",
                 button1 = "Open Installer",
-                button2 = "Later",
-                OnAccept = function() ns:ShowInstaller() end,
+                button2 = "Skip",
+                OnAccept = function()
+                    ns.db.installedVersion = ns.version
+                    ns:ShowInstaller()
+                end,
+                OnCancel = function()
+                    ns.db.installedVersion = ns.version
+                end,
                 timeout = 0,
                 whileDead = true,
                 hideOnEscape = true,
