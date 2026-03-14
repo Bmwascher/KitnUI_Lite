@@ -285,17 +285,26 @@ setupFunctions["Plater"] = function(addonKey, import)
 
         local data = Plater.DecompressData(ns.data[addonKey], "print")
 
-        Plater.ImportAndSwitchProfile(ns.profileName, data, false, false, true)
+        -- Write profile data directly to SavedVariables, bypassing
+        -- ImportAndSwitchProfile which resets-then-copies and recalculates scale
+        PlaterDB.profiles = PlaterDB.profiles or {}
+        PlaterDB.profiles[ns.profileName] = CopyTable(data)
+        Plater.db:SetProfile(ns.profileName)
+
+        -- Restore CVars saved in the profile
+        if Plater.RestoreProfileCVars then
+            Plater.RestoreProfileCVars()
+        end
 
         C_Timer.After(0.5, function()
             Plater.ImportScriptsFromLibrary()
             Plater.ApplyPatches()
             Plater.CompileAllScripts("script")
             Plater.CompileAllScripts("hook")
+            Plater.RefreshDBUpvalues()
             Plater:RefreshConfig()
             Plater.UpdatePlateClickSpace()
-            -- Force a full profile reload so sizing/upvalues refresh correctly
-            Plater.db:SetProfile(ns.profileName)
+            Plater.UpdateAllPlates()
         end)
 
         CompleteSetup(addonKey)
@@ -342,7 +351,7 @@ setupFunctions["WarpDeplete"] = function(addonKey, import)
             return
         end
 
-        WarpDepleteDB.profiles[ns.profileName] = ns.data[addonKey]
+        WarpDepleteDB.profiles[ns.profileName] = CopyTable(ns.data[addonKey])
         WarpDeplete.db:SetProfile(ns.profileName)
 
         CompleteSetup(addonKey)
