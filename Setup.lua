@@ -177,7 +177,8 @@ setupFunctions["UnhaltedUnitFrames"] = function(addonKey, import)
         end
     end
     if not UUFDB.profiles[targetName] then return end
-    UUFG.db:SetProfile(targetName)
+    local db = LibStub("AceDB-3.0"):New(UUFDB)
+    db:SetProfile(targetName)
 end
 setupFunctions["UnhaltedUnitFrames_Colored"] = setupFunctions["UnhaltedUnitFrames"]
 setupFunctions["UnhaltedUnitFrames_Dark"] = setupFunctions["UnhaltedUnitFrames"]
