@@ -77,6 +77,8 @@ function ns:IsProfileUpdated(addonKey)
     if not stored then return false end
     -- Legacy entries stored as `true` are always considered updated
     if stored == true then return true end
+    -- Per-spec tables (e.g. BlizzardCDM) don't support checksum comparison
+    if type(stored) == "table" then return false end
     return HasData(addonKey) and DataChecksum(addonKey) ~= stored
 end
 
@@ -292,6 +294,8 @@ setupFunctions["Plater"] = function(addonKey, import)
             Plater.CompileAllScripts("hook")
             Plater:RefreshConfig()
             Plater.UpdatePlateClickSpace()
+            -- Force a full profile reload so sizing/upvalues refresh correctly
+            Plater.db:SetProfile(ns.profileName)
         end)
 
         CompleteSetup(addonKey)
