@@ -10,8 +10,9 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 - **One-click profile loading** — apply all installed profiles to alts instantly with `/kitn load`
 - **Colored & Dark variants** — choose your style for Unit Frames (UUF) and Party/Raid Frames (Grid2)
 - **Square & Circle minimap** — pick your preferred shape for BasicMinimap and Minimap Stats
-- **Per-spec CDM layouts** — Blizzard Cooldown Manager and Ayije CDM layouts tailored per spec/role
-- **Auto-detection** — prompts new characters to load profiles, and notifies when updates are available
+- **Ayije CDM auto spec switching** — 1-click import of all profiles with automatic per-spec switching
+- **Per-spec Blizzard CDM layouts** — cooldown layouts for each specialization
+- **Auto-detection** — prompts new characters to load profiles, welcomes first-time users, and notifies when updates are available
 
 ## Supported Addons
 
@@ -24,7 +25,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 | Plater Nameplates | Nameplate styling |
 | BigWigs / LittleWigs | Boss timer bars |
 | WarpDeplete | M+ timer |
-| Ayije CDM | Caster / Melee / Double Resource layouts |
+| Ayije CDM | Base / CastEmphasized / Healer / Healer DualResource — auto spec switching |
 | Chattynator | Chat frame layout |
 | Method Raid Tools | Raid tools configuration |
 | BasicMinimap | Square / Circle shape |
@@ -37,6 +38,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 - `/kitn` — Show all available commands
 - `/kitn install` — Open the installer
 - `/kitn load` — Apply installed profiles to this character
+- `/kitn cdm` — Open installer to the Blizzard CDM page
 - `/kitn reset` — Reset installer state
 
 ## Related Addons

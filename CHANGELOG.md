@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.0.1
+- Updated README
+
 ## v2.0.0
 - Ayije CDM: 1-click import of all profiles (base, CastEmphasized, Healer, Healer DualResource)
 - Ayije CDM: Automatic per-spec profile switching via AceDB specProfiles
