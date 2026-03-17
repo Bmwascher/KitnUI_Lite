@@ -224,40 +224,7 @@ GetPages = function()
         {
             title = "Ayije CDM",
             addon = "Ayije_CDM",
-            setup = function(content)
-                content.subtitle:SetText("Ayije Cooldown Manager")
-                content.desc1:SetText("Choose a layout for Ayije CDM.")
-                ShowImportStatus(content, "Ayije_CDM")
-
-                local variants = {
-                    { key = "Ayije_CDM_Caster", label = "Caster" },
-                    { key = "Ayije_CDM_Melee", label = "Melee" },
-                    { key = "Ayije_CDM_DoubleResource", label = "Healer" },
-                }
-                local btnWidth = 150
-                local btnSpacing = 8
-                local totalWidth = #variants * btnWidth + (#variants - 1) * btnSpacing
-                local startX = -totalWidth / 2 + btnWidth / 2
-
-                for i, v in ipairs(variants) do
-                    local btn = content.specBtns[i]
-                    if btn then
-                        btn:ClearAllPoints()
-                        btn:SetPoint("BOTTOM", content, "BOTTOM", startX + (i - 1) * (btnWidth + btnSpacing), 15)
-                        btn:SetSize(btnWidth, 30)
-                        btn.text:SetText(v.label)
-                        btn:SetAlpha(1)
-                        btn:SetScript("OnClick", function()
-                            ns.SetupAddon(v.key, true)
-                            ShowImportStatus(content, "Ayije_CDM")
-                            PlayInstallSound()
-                            content.status:SetText("|cff00ff00" .. v.label .. " layout installed!|r")
-                            UpdateStepButtons(GetPages())
-                        end)
-                        btn:Show()
-                    end
-                end
-            end,
+            setup = SimpleInstallPage("Ayije CDM", "Import Ayije CDM profiles for all specs.\nProfiles will auto-switch when you change spec.", "Ayije_CDM"),
         },
         {
             title = "Chattynator",
@@ -771,7 +738,7 @@ end
 -- Public API
 ------------------------------------------------------------
 
-function ns:ShowInstaller()
+function ns:ShowInstaller(targetAddon)
     if InCombatLockdown() then
         print(ns.title .. ": Cannot open installer during combat.")
         return
@@ -781,7 +748,18 @@ function ns:ShowInstaller()
         installerFrame = CreateInstallerFrame()
     end
 
-    currentPage = 1
+    local startPage = 1
+    if targetAddon then
+        local pages = GetPages()
+        for i, page in ipairs(pages) do
+            if page.addon == targetAddon then
+                startPage = i
+                break
+            end
+        end
+    end
+
+    currentPage = startPage
     installerFrame:Show()
-    SetPage(1)
+    SetPage(startPage)
 end

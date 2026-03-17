@@ -19,9 +19,9 @@ end
 local variantBase = {
     UnhaltedUnitFrames_Colored = "UnhaltedUnitFrames",
     UnhaltedUnitFrames_Dark = "UnhaltedUnitFrames",
-    Ayije_CDM_Caster = "Ayije_CDM",
-    Ayije_CDM_Melee = "Ayije_CDM",
-    Ayije_CDM_DoubleResource = "Ayije_CDM",
+    Ayije_CDM_CastEmphasized = "Ayije_CDM",
+    Ayije_CDM_Healer = "Ayije_CDM",
+    Ayije_CDM_HealerDualResource = "Ayije_CDM",
     Grid2_Colored = "Grid2",
     Grid2_Dark = "Grid2",
     BasicMinimap_Square = "BasicMinimap",
@@ -368,68 +368,133 @@ end
 -- _G["Ayije_CDM_API"] (WagoUI.lua) is a DIFFERENT object from _G["Ayije_CDM"].API (Init.lua).
 -- The Options addon redefines ImportProfile on CDM.API (the Init.lua one), not the WagoUI global.
 -- We must load Options first, then call CDM.API:ImportProfile().
+--
+-- 1-click import: imports all 4 variants, then writes AceDB specProfiles
+-- so CDM auto-switches profiles when the player changes spec.
 ------------------------------------------------------------
 
--- Stable profile names per CDM variant (so each variant can coexist)
+-- Profile names written to Ayije_CDMDB for each variant
 local cdmProfileNames = {
-    Ayije_CDM_Caster = ns.profileName .. " Caster",
-    Ayije_CDM_Melee = ns.profileName .. " Melee",
-    Ayije_CDM_DoubleResource = ns.profileName .. " DoubleResource",
+    Ayije_CDM                    = ns.profileName,
+    Ayije_CDM_CastEmphasized     = ns.profileName .. " CastEmphasized",
+    Ayije_CDM_Healer             = ns.profileName .. " Healer",
+    Ayije_CDM_HealerDualResource = ns.profileName .. " Healer DualResource",
 }
+
+-- All variant data keys to import
+local cdmVariants = {
+    "Ayije_CDM",
+    "Ayije_CDM_CastEmphasized",
+    "Ayije_CDM_Healer",
+    "Ayije_CDM_HealerDualResource",
+}
+
+-- Class → spec profile mapping (AceDB specProfiles format)
+-- Indices match WoW spec order from GetSpecializationInfoForClassID
+local P = cdmProfileNames
+local cdmSpecMapping = {
+    ["Death Knight"]  = { P.Ayije_CDM, P.Ayije_CDM, P.Ayije_CDM, ["enabled"] = true },                                              -- Blood, Frost, Unholy
+    ["Demon Hunter"]  = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM, P.Ayije_CDM_CastEmphasized, ["enabled"] = true },                -- Havoc, Vengeance, Devourer
+    ["Druid"]         = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM, P.Ayije_CDM, P.Ayije_CDM_Healer, ["enabled"] = true },           -- Balance, Feral, Guardian, Restoration
+    ["Evoker"]        = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM_HealerDualResource, P.Ayije_CDM_CastEmphasized, ["enabled"] = true }, -- Devastation, Preservation, Augmentation
+    ["Hunter"]        = { P.Ayije_CDM, P.Ayije_CDM, P.Ayije_CDM, ["enabled"] = true },                                              -- Beast Mastery, Marksmanship, Survival
+    ["Mage"]          = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM_CastEmphasized, P.Ayije_CDM_CastEmphasized, ["enabled"] = true },  -- Arcane, Fire, Frost
+    ["Monk"]          = { P.Ayije_CDM, P.Ayije_CDM_Healer, P.Ayije_CDM, ["enabled"] = true },                                       -- Brewmaster, Mistweaver, Windwalker
+    ["Paladin"]       = { P.Ayije_CDM_HealerDualResource, P.Ayije_CDM, P.Ayije_CDM, ["enabled"] = true },                           -- Holy, Protection, Retribution
+    ["Priest"]        = { P.Ayije_CDM_Healer, P.Ayije_CDM_Healer, P.Ayije_CDM_CastEmphasized, ["enabled"] = true },                  -- Discipline, Holy, Shadow
+    ["Rogue"]         = { P.Ayije_CDM, P.Ayije_CDM, P.Ayije_CDM, ["enabled"] = true },                                              -- Assassination, Outlaw, Subtlety
+    ["Shaman"]        = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM, P.Ayije_CDM_Healer, ["enabled"] = true },                        -- Elemental, Enhancement, Restoration
+    ["Warlock"]       = { P.Ayije_CDM_CastEmphasized, P.Ayije_CDM_CastEmphasized, P.Ayije_CDM_CastEmphasized, ["enabled"] = true },  -- Affliction, Demonology, Destruction
+    ["Warrior"]       = { P.Ayije_CDM, P.Ayije_CDM, P.Ayije_CDM, ["enabled"] = true },                                              -- Arms, Fury, Protection
+}
+
+-- Internal: import a single CDM variant export string
+local function ImportCDMVariant(CDM_Addon, variantKey)
+    if not HasData(variantKey) then return false end
+
+    local targetName = cdmProfileNames[variantKey] or ns.profileName
+
+    -- Hook ImportProfileData to force our profile name instead of the one
+    -- embedded in the export string (prevents CDM's name de-duplication)
+    local origImportProfileData = CDM_Addon.ImportProfileData
+    CDM_Addon.ImportProfileData = function(self, _name, profileData)
+        return origImportProfileData(self, targetName, profileData)
+    end
+
+    local success, msg = CDM_Addon.API:ImportProfile(ns.data[variantKey])
+
+    CDM_Addon.ImportProfileData = origImportProfileData
+
+    if not success then
+        print(ns.title .. ": AyijeCDM import failed for " .. targetName .. " - " .. (msg or "unknown error"))
+    end
+
+    return success
+end
+
+-- Write AceDB specProfiles so CDM auto-switches on spec change
+local function SetupCDMSpecProfiles()
+    if not Ayije_CDMDB then return end
+
+    local className = UnitClass("player")
+    local specMapping = cdmSpecMapping[className]
+    if not specMapping then return end
+
+    local charKey = UnitName("player") .. " - " .. GetRealmName()
+
+    Ayije_CDMDB.specProfiles = Ayije_CDMDB.specProfiles or {}
+    Ayije_CDMDB.specProfiles[charKey] = CopyTable(specMapping)
+
+    Ayije_CDMDB.profileKeys = Ayije_CDMDB.profileKeys or {}
+    local currentSpec = GetSpecialization() or 1
+    Ayije_CDMDB.profileKeys[charKey] = specMapping[currentSpec] or ns.profileName
+
+    -- Immediately activate the correct profile
+    local CDM_Addon = _G["Ayije_CDM"]
+    if CDM_Addon and CDM_Addon.API and CDM_Addon.API.SetProfile then
+        CDM_Addon.API:SetProfile(Ayije_CDMDB.profileKeys[charKey])
+    end
+end
 
 setupFunctions["Ayije_CDM"] = function(addonKey, import)
     if import then
-        if not HasData(addonKey) then
-            print(ns.title .. ": No AyijeCDM data found. Export your profile from AyijeCDM and add it to Data.lua.")
-            return
-        end
-
         -- Load the Options addon to get the full ImportProfile (handles !ACDM: prefix)
         if not C_AddOns.IsAddOnLoaded("Ayije_CDM_Options") then
             C_AddOns.LoadAddOn("Ayije_CDM_Options")
         end
 
         local CDM_Addon = _G["Ayije_CDM"]
-        local targetName = cdmProfileNames[addonKey] or ns.profileName
 
-        -- Suppress the config frame that RebuildConfigFrame auto-opens during import
+        -- Suppress the config frame for the entire import + spec setup
         local origRebuild = CDM_Addon.RebuildConfigFrame
         CDM_Addon.RebuildConfigFrame = function() end
 
-        -- Hook ImportProfileData to force our profile name instead of the one
-        -- embedded in the export string (prevents CDM's name de-duplication)
-        local origImportProfileData = CDM_Addon.ImportProfileData
-        CDM_Addon.ImportProfileData = function(self, _name, profileData)
-            return origImportProfileData(self, targetName, profileData)
+        -- Import all variants
+        local anySuccess = false
+        for _, vk in ipairs(cdmVariants) do
+            if ImportCDMVariant(CDM_Addon, vk) then
+                anySuccess = true
+            end
         end
 
-        local success, msg = CDM_Addon.API:ImportProfile(ns.data[addonKey])
-
-        -- Restore hooks
-        CDM_Addon.ImportProfileData = origImportProfileData
-        CDM_Addon.RebuildConfigFrame = origRebuild
-
-        if success then
-            CompleteSetup(addonKey)
+        if anySuccess then
+            CompleteSetup("Ayije_CDM")
+            SetupCDMSpecProfiles()
         else
-            print(ns.title .. ": AyijeCDM import failed - " .. (msg or "unknown error"))
+            print(ns.title .. ": No AyijeCDM profiles were imported.")
         end
 
+        -- Restore and hide after everything is done
+        CDM_Addon.RebuildConfigFrame = origRebuild
         if _G["Ayije_CDMConfigFrame"] then
             _G["Ayije_CDMConfigFrame"]:Hide()
         end
         return
     end
 
-    if not Ayije_CDMDB or not Ayije_CDMDB.profiles then return end
-    local targetName = cdmProfileNames[addonKey] or ns.profileName
-    if not Ayije_CDMDB.profiles[targetName] then return end
-    local CDM_Addon = _G["Ayije_CDM"]
-    CDM_Addon.API:SetProfile(targetName)
+    -- Load path: set up spec auto-switching for this character
+    SetupCDMSpecProfiles()
 end
-setupFunctions["Ayije_CDM_Caster"] = setupFunctions["Ayije_CDM"]
-setupFunctions["Ayije_CDM_Melee"] = setupFunctions["Ayije_CDM"]
-setupFunctions["Ayije_CDM_DoubleResource"] = setupFunctions["Ayije_CDM"]
 
 ------------------------------------------------------------
 -- Chattynator (custom DB, direct table manipulation)

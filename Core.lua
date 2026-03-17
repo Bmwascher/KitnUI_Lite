@@ -44,7 +44,6 @@ end
 
 -- Addons that require manual selection (multi-variant or per-spec)
 local manualSelectAddons = {
-    Ayije_CDM = true,
     BlizzardCDM = true,
 }
 
@@ -121,6 +120,10 @@ KitnCommands["load"] = function()
     ns:LoadProfiles()
 end
 
+KitnCommands["cdm"] = function()
+    ns:ShowInstaller("BlizzardCDM")
+end
+
 KitnCommands["reset"] = function()
     KitnUILiteDB = nil
     ReloadUI()
@@ -136,6 +139,7 @@ KitnCommands["slash"] = function()
     print(ns.title .. " — All slash commands:")
     print("  /kitn install  - Open the installer to import profiles")
     print("  /kitn load     - Apply installed profiles to this character")
+    print("  /kitn cdm      - Open installer to the Blizzard CDM page")
     print("  /kitn reset    - Reset installer state (does not remove addon profiles)")
     print("  /kitn version  - Show addon version")
     -- Print extended slash commands registered by other Kitn addons
@@ -160,6 +164,7 @@ SlashCmdList["KITN"] = function(msg)
         print("  /kitn install  - Open the installer to import profiles")
         print("   |cffff8800Warning: This will overwrite personal customizations|r")
         print("  /kitn load     - Apply installed profiles to this character")
+        print("  /kitn cdm      - Open installer to the Blizzard CDM page")
         print("  /kitn reset    - Reset installer state (does not remove addon profiles)")
         print("  /kitn version  - Show addon version")
         if C_AddOns.DoesAddOnExist("KitnEssentials") then
@@ -231,6 +236,18 @@ frame:SetScript("OnEvent", function(self, event, arg1)
                 hideOnEscape = true,
             }
             StaticPopup_Show("KITNUI_LOAD_PROFILES")
+        -- First time install: no profiles exist yet
+        elseif not hasProfiles then
+            StaticPopupDialogs["KITNUI_FIRST_INSTALL"] = {
+                text = ns.title .. ": Welcome! Open the installer to set up your addon profiles?",
+                button1 = "Open Installer",
+                button2 = "Later",
+                OnAccept = function() ns:ShowInstaller() end,
+                timeout = 0,
+                whileDead = true,
+                hideOnEscape = true,
+            }
+            StaticPopup_Show("KITNUI_FIRST_INSTALL")
         end
 
         -- Login message
@@ -243,15 +260,9 @@ frame:SetScript("OnEvent", function(self, event, arg1)
             local skipped = ns.db.pendingReminder
             ns.db.pendingReminder = nil
             local reminders = {}
-            if skipped.Ayije_CDM then
-                reminders[#reminders + 1] = "Ayije CDM (pick Caster/Melee/Double Resource)"
-            end
             if skipped.BlizzardCDM then
-                reminders[#reminders + 1] = "Blizzard CDM (pick your spec layout)"
-            end
-            if #reminders > 0 then
                 C_Timer.After(3, function()
-                    print(ns.title .. ": Open the installer (/kitn install) to finish setup: " .. table.concat(reminders, ", "))
+                    print(ns.title .. ": Use |cffFF008C/kitn cdm|r to set up your Blizzard CDM spec layouts.")
                 end)
             end
         end
