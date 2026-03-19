@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.1.0
+- Grid2: Added Healer Colored and Healer Dark profiles
+- Grid2: Choosing Colored or Dark now installs both DPS and Healer profiles in one click
+- Grid2: Automatic per-spec profile switching (DPS specs use DPS profile, healer specs use healer profile)
+- Grid2: Switching styles (Colored <-> Dark) properly clears the old style
+- Fixed installer button layout issues when navigating between pages (ResetContent now resets all button positions and sizes)
+
 ## v2.0.1
 - Updated README
 

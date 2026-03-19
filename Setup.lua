@@ -24,6 +24,8 @@ local variantBase = {
     Ayije_CDM_HealerDualResource = "Ayije_CDM",
     Grid2_Colored = "Grid2",
     Grid2_Dark = "Grid2",
+    Grid2_HealerColored = "Grid2",
+    Grid2_HealerDark = "Grid2",
     BasicMinimap_Square = "BasicMinimap",
     BasicMinimap_Circle = "BasicMinimap",
     MinimapStats_Square = "MinimapStats",
@@ -192,14 +194,123 @@ setupFunctions["UnhaltedUnitFrames_Dark"] = setupFunctions["UnhaltedUnitFrames"]
 local grid2ProfileNames = {
     Grid2_Colored = ns.profileName .. " Colored",
     Grid2_Dark = ns.profileName .. " Dark",
+    Grid2_HealerColored = ns.profileName .. " Healer Colored",
+    Grid2_HealerDark = ns.profileName .. " Healer Dark",
 }
 
-setupFunctions["Grid2"] = function(addonKey, import)
-    local targetName = grid2ProfileNames[addonKey] or ns.profileName
+-- Healer spec indices by class (specs that should use the healer Grid2 profile)
+local grid2HealerSpecs = {
+    ["Druid"]    = { [4] = true },  -- Restoration
+    ["Evoker"]   = { [2] = true },  -- Preservation
+    ["Monk"]     = { [2] = true },  -- Mistweaver
+    ["Paladin"]  = { [1] = true },  -- Holy
+    ["Priest"]   = { [1] = true, [2] = true },  -- Discipline, Holy
+    ["Shaman"]   = { [3] = true },  -- Restoration
+}
 
+-- Maps a chosen style key to the DPS + Healer data keys
+local grid2StylePairs = {
+    Grid2_Colored = { dps = "Grid2_Colored", healer = "Grid2_HealerColored" },
+    Grid2_Dark    = { dps = "Grid2_Dark",    healer = "Grid2_HealerDark" },
+}
+
+-- Write Grid2's LibDualSpec-1.0 namespace so it auto-switches between DPS and healer profiles
+local function SetupGrid2SpecProfiles()
+    if not Grid2DB then return end
+
+    -- Find which DPS and healer variants are installed
+    local dpsProfile, healerProfile
+    if ns.db.profiles and ns.db.profiles.Grid2_Colored then
+        dpsProfile = grid2ProfileNames.Grid2_Colored
+    elseif ns.db.profiles and ns.db.profiles.Grid2_Dark then
+        dpsProfile = grid2ProfileNames.Grid2_Dark
+    end
+    if ns.db.profiles and ns.db.profiles.Grid2_HealerColored then
+        healerProfile = grid2ProfileNames.Grid2_HealerColored
+    elseif ns.db.profiles and ns.db.profiles.Grid2_HealerDark then
+        healerProfile = grid2ProfileNames.Grid2_HealerDark
+    end
+
+    -- Only set up spec switching if both DPS and healer variants are installed
+    if not dpsProfile or not healerProfile then return end
+
+    local className = UnitClass("player")
+    local healerSpecIndices = grid2HealerSpecs[className]
+
+    -- Classes with no healer specs don't need spec switching
+    if not healerSpecIndices then return end
+
+    local charKey = UnitName("player") .. " - " .. GetRealmName()
+    local _, _, classId = UnitClass("player")
+    local numSpecs = GetNumSpecializationsForClassID(classId)
+    local currentSpec = GetSpecialization() or 1
+
+    -- Enable spec profiles via Grid2's runtime API (toggles the checkbox and
+    -- initializes the LibDualSpec-1.0 namespace with the current profile)
+    if Grid2 and Grid2.EnableProfilesPerSpec then
+        Grid2:EnableProfilesPerSpec(true)
+    end
+
+    -- Now write our per-spec profile assignments into the namespace
+    -- Grid2 stores this in Grid2DB.char[charKey]["LibDualSpec-1.0"]
+    if Grid2 and Grid2.profiles and Grid2.profiles.char then
+        local specData = Grid2.profiles.char
+        specData.enabled = true
+        for i = 1, numSpecs do
+            specData[i] = healerSpecIndices[i] and healerProfile or dpsProfile
+        end
+    end
+
+    -- Activate the correct profile for current spec
+    local targetProfile = (healerSpecIndices[currentSpec] and healerProfile) or dpsProfile
+    if Grid2 and Grid2.db then
+        Grid2.db:SetProfile(targetProfile)
+    end
+end
+
+-- Internal: import a single Grid2 variant
+local function ImportGrid2Variant(variantKey)
+    if not HasData(variantKey) then return false end
+
+    local targetName = grid2ProfileNames[variantKey] or ns.profileName
+
+    -- Delete existing profile with our name so import won't deduplicate
+    local currentProfile = Grid2.db:GetCurrentProfile()
+    if currentProfile == targetName then
+        Grid2.db:SetProfile("Default")
+    end
+    local profiles = Grid2.db:GetProfiles()
+    for _, name in ipairs(profiles) do
+        if name == targetName then
+            Grid2.db:DeleteProfile(targetName)
+            break
+        end
+    end
+
+    -- Hook SetProfile to force our profile name
+    local origSetProfile = Grid2.db.SetProfile
+    Grid2.db.SetProfile = function(self, _name)
+        Grid2.db.SetProfile = origSetProfile
+        return origSetProfile(self, targetName)
+    end
+
+    local success = Grid2Options:ImportCurrentProfile(ns.data[variantKey], true)
+
+    -- Restore hook in case import failed before SetProfile was called
+    Grid2.db.SetProfile = origSetProfile
+
+    if not success then
+        print(ns.title .. ": Grid2 import failed for " .. targetName)
+    end
+
+    return success
+end
+
+setupFunctions["Grid2"] = function(addonKey, import)
     if import then
-        if not HasData(addonKey) then
-            print(ns.title .. ": No Grid2 data found. Export your profile from Grid2 Options and add it to Data.lua.")
+        local pair = grid2StylePairs[addonKey]
+        if not pair then
+            print(ns.title .. ": Unknown Grid2 style: " .. addonKey)
             return
         end
 
@@ -208,46 +319,37 @@ setupFunctions["Grid2"] = function(addonKey, import)
             C_AddOns.LoadAddOn("Grid2Options")
         end
 
-        -- Delete existing profile with our name so import won't deduplicate
-        -- Must switch away first if it's the active profile
-        local currentProfile = Grid2.db:GetCurrentProfile()
-        if currentProfile == targetName then
-            Grid2.db:SetProfile("Default")
-        end
-        local profiles = Grid2.db:GetProfiles()
-        for _, name in ipairs(profiles) do
-            if name == targetName then
-                Grid2.db:DeleteProfile(targetName)
-                break
+        -- Clear the opposite style's install tracking so spec profiles resolve correctly
+        -- (e.g. switching from Colored to Dark should forget Colored entries)
+        for styleKey, stylePair in pairs(grid2StylePairs) do
+            if styleKey ~= addonKey and ns.db.profiles then
+                ns.db.profiles[stylePair.dps] = nil
+                ns.db.profiles[stylePair.healer] = nil
             end
         end
 
-        -- Hook SetProfile to force our profile name instead of the one
-        -- embedded in the export string
-        local origSetProfile = Grid2.db.SetProfile
-        Grid2.db.SetProfile = function(self, _name)
-            Grid2.db.SetProfile = origSetProfile
-            return origSetProfile(self, targetName)
-        end
+        -- Import both DPS and Healer variants
+        local dpsOk = ImportGrid2Variant(pair.dps)
+        local healerOk = ImportGrid2Variant(pair.healer)
 
-        local success = Grid2Options:ImportCurrentProfile(ns.data[addonKey], true)
+        if dpsOk then CompleteSetup(pair.dps) end
+        if healerOk then CompleteSetup(pair.healer) end
 
-        -- Restore hook in case import failed before SetProfile was called
-        Grid2.db.SetProfile = origSetProfile
-
-        if success then
-            CompleteSetup(addonKey)
-        else
-            print(ns.title .. ": Grid2 import failed.")
+        if dpsOk or healerOk then
+            SetupGrid2SpecProfiles()
         end
         return
     end
 
+    -- Load path: activate the correct profile for current spec
+    local targetName = grid2ProfileNames[addonKey] or ns.profileName
     if not Grid2DB or not Grid2DB.profiles or not Grid2DB.profiles[targetName] then return end
-    Grid2.db:SetProfile(targetName)
+    SetupGrid2SpecProfiles()
 end
 setupFunctions["Grid2_Colored"] = setupFunctions["Grid2"]
 setupFunctions["Grid2_Dark"] = setupFunctions["Grid2"]
+setupFunctions["Grid2_HealerColored"] = setupFunctions["Grid2"]
+setupFunctions["Grid2_HealerDark"] = setupFunctions["Grid2"]
 
 ------------------------------------------------------------
 -- Details! Damage Meter

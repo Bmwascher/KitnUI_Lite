@@ -197,7 +197,7 @@ GetPages = function()
         {
             title = "Party/Raid Frames",
             addon = "Grid2",
-            setup = TwoOptionPage("Grid2", "Choose a style for Grid2 party and raid frames.", "Grid2",
+            setup = TwoOptionPage("Grid2", "Choose a style for Grid2 party and raid frames.\nInstalls both DPS and Healer profiles with automatic spec switching.", "Grid2",
                 "Colored", "Grid2_Colored", "|cff00ff00Colored style installed!|r",
                 "Dark", "Grid2_Dark", "|cff00ff00Dark style installed!|r"),
         },
@@ -374,9 +374,13 @@ local function ResetContent(content)
     -- Reset option1 to centered (moves to left offset when option2 is shown)
     content.option1:ClearAllPoints()
     content.option1:SetPoint("BOTTOM", content, "BOTTOM", 0, 15)
-    -- Hide spec buttons
+    -- Reset option2 to default right position
+    content.option2:ClearAllPoints()
+    content.option2:SetPoint("BOTTOM", content, "BOTTOM", 95, 15)
+    -- Hide and reset spec buttons
     if content.specBtns then
         for _, btn in ipairs(content.specBtns) do
+            btn:SetSize(170, 30)
             btn:Hide()
         end
     end
@@ -619,7 +623,7 @@ local function CreateInstallerFrame()
     -- Logo (always visible, above buttons)
     local logo = content:CreateTexture(nil, "ARTWORK")
     logo:SetSize(220, 220)
-    logo:SetPoint("BOTTOM", content, "BOTTOM", 0, 68)
+    logo:SetPoint("BOTTOM", content, "BOTTOM", 0, 78)
     logo:SetTexture("Interface\\AddOns\\KitnUI_Lite\\KitnUI")
     content.logo = logo
 
