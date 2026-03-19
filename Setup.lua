@@ -19,6 +19,8 @@ end
 local variantBase = {
     UnhaltedUnitFrames_Colored = "UnhaltedUnitFrames",
     UnhaltedUnitFrames_Dark = "UnhaltedUnitFrames",
+    UnhaltedUnitFrames_HealerColored = "UnhaltedUnitFrames",
+    UnhaltedUnitFrames_HealerDark = "UnhaltedUnitFrames",
     Ayije_CDM_CastEmphasized = "Ayije_CDM",
     Ayije_CDM_Healer = "Ayije_CDM",
     Ayije_CDM_HealerDualResource = "Ayije_CDM",
@@ -150,40 +152,144 @@ end
 local uufProfileNames = {
     UnhaltedUnitFrames_Colored = ns.profileName .. " Colored",
     UnhaltedUnitFrames_Dark = ns.profileName .. " Dark",
+    UnhaltedUnitFrames_HealerColored = ns.profileName .. " Healer Colored",
+    UnhaltedUnitFrames_HealerDark = ns.profileName .. " Healer Dark",
 }
 
-setupFunctions["UnhaltedUnitFrames"] = function(addonKey, import)
-    local targetName = uufProfileNames[addonKey] or ns.profileName
+-- Maps a chosen style key to the DPS + Healer data keys
+local uufStylePairs = {
+    UnhaltedUnitFrames_Colored = { dps = "UnhaltedUnitFrames_Colored", healer = "UnhaltedUnitFrames_HealerColored" },
+    UnhaltedUnitFrames_Dark    = { dps = "UnhaltedUnitFrames_Dark",    healer = "UnhaltedUnitFrames_HealerDark" },
+}
 
-    if import then
-        if not HasData(addonKey) then
-            print(ns.title .. ": No UUF data found. Export your profile from UUF settings and add it to Data.lua.")
-            return
+-- Healer spec indices by class (same mapping as Grid2)
+local uufHealerSpecs = {
+    ["Druid"]    = { [4] = true },  -- Restoration
+    ["Evoker"]   = { [2] = true },  -- Preservation
+    ["Monk"]     = { [2] = true },  -- Mistweaver
+    ["Paladin"]  = { [1] = true },  -- Holy
+    ["Priest"]   = { [1] = true, [2] = true },  -- Discipline, Holy
+    ["Shaman"]   = { [3] = true },  -- Restoration
+}
+
+-- Set up UUF's LibDualSpec spec profiles for auto-switching between DPS and healer
+local function SetupUUFSpecProfiles()
+    if not UUF or not UUF.db then return end
+
+    -- Find which DPS and healer variants are installed
+    local dpsProfile, healerProfile
+    if ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_Colored then
+        dpsProfile = uufProfileNames.UnhaltedUnitFrames_Colored
+    elseif ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_Dark then
+        dpsProfile = uufProfileNames.UnhaltedUnitFrames_Dark
+    end
+    if ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_HealerColored then
+        healerProfile = uufProfileNames.UnhaltedUnitFrames_HealerColored
+    elseif ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_HealerDark then
+        healerProfile = uufProfileNames.UnhaltedUnitFrames_HealerDark
+    end
+
+    -- Only set up spec switching if both DPS and healer variants are installed
+    if not dpsProfile or not healerProfile then return end
+
+    local className = UnitClass("player")
+    local healerSpecIndices = uufHealerSpecs[className]
+
+    -- Classes with no healer specs just activate the DPS profile
+    if not healerSpecIndices then
+        if dpsProfile then
+            UUF.db:SetProfile(dpsProfile)
         end
-
-        UUFG:ImportUUF(ns.data[addonKey], targetName)
-
-        CompleteSetup(addonKey)
         return
     end
 
-    if not UUFDB or not UUFDB.profiles then return end
-    -- When called from LoadProfiles, addonKey is the base "UnhaltedUnitFrames";
-    -- find which variant was actually installed
-    if not UUFDB.profiles[targetName] then
-        for _, variant in ipairs({"UnhaltedUnitFrames_Colored", "UnhaltedUnitFrames_Dark"}) do
-            if ns.db.profiles[variant] and UUFDB.profiles[uufProfileNames[variant] or ns.profileName] then
-                targetName = uufProfileNames[variant] or ns.profileName
-                break
-            end
+    local _, _, classId = UnitClass("player")
+    local numSpecs = GetNumSpecializationsForClassID(classId)
+    local currentSpec = GetSpecialization() or 1
+
+    -- Switch to DPS profile first, then enable spec profiles
+    UUF.db:SetProfile(dpsProfile)
+
+    -- Write spec profiles to the LibDualSpec AceDB namespace (persists in SavedVariables)
+    local charKey = UnitName("player") .. " - " .. GetRealmName()
+    local ns_db = UUF.db:GetNamespace("LibDualSpec-1.0", true)
+    if ns_db then
+        local charData = ns_db.char
+        charData.enabled = true
+        for i = 1, numSpecs do
+            charData[i] = healerSpecIndices[i] and healerProfile or dpsProfile
+        end
+        -- Trigger profile switch for current spec
+        if UUF.db.CheckDualSpecState then
+            UUF.db:CheckDualSpecState()
         end
     end
-    if not UUFDB.profiles[targetName] then return end
+end
+
+setupFunctions["UnhaltedUnitFrames"] = function(addonKey, import)
+    if import then
+        local pair = uufStylePairs[addonKey]
+        if not pair then
+            print(ns.title .. ": Unknown UUF style: " .. addonKey)
+            return
+        end
+
+        -- Clear the opposite style's install tracking
+        for styleKey, stylePair in pairs(uufStylePairs) do
+            if styleKey ~= addonKey and ns.db.profiles then
+                ns.db.profiles[stylePair.dps] = nil
+                ns.db.profiles[stylePair.healer] = nil
+            end
+        end
+
+        -- Import Healer first, then DPS — ImportUUF calls SetProfile internally,
+        -- so DPS imported last means UUF defaults to the DPS profile
+        for _, variantKey in ipairs({pair.healer, pair.dps}) do
+            if HasData(variantKey) then
+                local targetName = uufProfileNames[variantKey] or ns.profileName
+                UUFG:ImportUUF(ns.data[variantKey], targetName)
+                CompleteSetup(variantKey)
+            end
+        end
+
+        SetupUUFSpecProfiles()
+        return
+    end
+
+    -- Load path: activate the correct UUF profile for this character
+    if not UUFDB or not UUFDB.profiles then return end
+
+    -- Find which DPS and healer variants are installed
+    local dpsName, healerName
+    if ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_Colored then
+        dpsName = uufProfileNames.UnhaltedUnitFrames_Colored
+    elseif ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_Dark then
+        dpsName = uufProfileNames.UnhaltedUnitFrames_Dark
+    end
+    if ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_HealerColored then
+        healerName = uufProfileNames.UnhaltedUnitFrames_HealerColored
+    elseif ns.db.profiles and ns.db.profiles.UnhaltedUnitFrames_HealerDark then
+        healerName = uufProfileNames.UnhaltedUnitFrames_HealerDark
+    end
+
+    -- Determine which profile to activate based on current spec
+    local className = UnitClass("player")
+    local healerSpecs = uufHealerSpecs[className]
+    local currentSpec = GetSpecialization() or 1
+    local targetName = dpsName
+    if healerSpecs and healerSpecs[currentSpec] and healerName then
+        targetName = healerName
+    end
+
+    if not targetName or not UUFDB.profiles[targetName] then return end
+
     local db = LibStub("AceDB-3.0"):New(UUFDB)
     db:SetProfile(targetName)
 end
 setupFunctions["UnhaltedUnitFrames_Colored"] = setupFunctions["UnhaltedUnitFrames"]
 setupFunctions["UnhaltedUnitFrames_Dark"] = setupFunctions["UnhaltedUnitFrames"]
+setupFunctions["UnhaltedUnitFrames_HealerColored"] = setupFunctions["UnhaltedUnitFrames"]
+setupFunctions["UnhaltedUnitFrames_HealerDark"] = setupFunctions["UnhaltedUnitFrames"]
 
 ------------------------------------------------------------
 -- Grid2 (AceDB - uses Grid2Options:ImportCurrentProfile)
@@ -237,13 +343,17 @@ local function SetupGrid2SpecProfiles()
     local className = UnitClass("player")
     local healerSpecIndices = grid2HealerSpecs[className]
 
-    -- Classes with no healer specs don't need spec switching
-    if not healerSpecIndices then return end
-
-    local charKey = UnitName("player") .. " - " .. GetRealmName()
     local _, _, classId = UnitClass("player")
     local numSpecs = GetNumSpecializationsForClassID(classId)
     local currentSpec = GetSpecialization() or 1
+
+    -- Classes with no healer specs just activate the DPS profile
+    if not healerSpecIndices then
+        if Grid2 and Grid2.db then
+            Grid2.db:SetProfile(dpsProfile)
+        end
+        return
+    end
 
     -- Enable spec profiles via Grid2's runtime API (toggles the checkbox and
     -- initializes the LibDualSpec-1.0 namespace with the current profile)
@@ -252,7 +362,6 @@ local function SetupGrid2SpecProfiles()
     end
 
     -- Now write our per-spec profile assignments into the namespace
-    -- Grid2 stores this in Grid2DB.char[charKey]["LibDualSpec-1.0"]
     if Grid2 and Grid2.profiles and Grid2.profiles.char then
         local specData = Grid2.profiles.char
         specData.enabled = true

@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.0
+- UUF: Added Healer Colored and Healer Dark profiles
+- UUF: Choosing Colored or Dark now installs both DPS and Healer profiles in one click
+- UUF: Install and load activate the correct profile based on current spec
+- Grid2/UUF: Fixed load path not activating DPS profile for non-healer classes/specs
+- Updated Blizzard Edit Mode and Ayije CDM Healer profile strings
+- Moved installer textures to Media/Textures folder
+
 ## v2.1.0
 - Grid2: Added Healer Colored and Healer Dark profiles
 - Grid2: Choosing Colored or Dark now installs both DPS and Healer profiles in one click

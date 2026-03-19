@@ -190,7 +190,7 @@ GetPages = function()
         {
             title = "Unit Frames",
             addon = "UnhaltedUnitFrames",
-            setup = TwoOptionPage("Unhalted Unit Frames", "Choose a style for Unhalted Unit Frames.", "UnhaltedUnitFrames",
+            setup = TwoOptionPage("Unhalted Unit Frames", "Choose a style for Unhalted Unit Frames.\nInstalls both DPS and Healer profiles with automatic spec switching.", "UnhaltedUnitFrames",
                 "Colored", "UnhaltedUnitFrames_Colored", "|cff00ff00Colored style installed!|r",
                 "Dark", "UnhaltedUnitFrames_Dark", "|cff00ff00Dark style installed!|r"),
         },
@@ -552,7 +552,7 @@ local function CreateInstallerFrame()
     local brandLogo = sidebar:CreateTexture(nil, "ARTWORK")
     brandLogo:SetSize(70, 30)
     brandLogo:SetPoint("TOP", 0, -8)
-    brandLogo:SetTexture("Interface\\AddOns\\KitnUI_Lite\\KitnUI_Text")
+    brandLogo:SetTexture("Interface\\AddOns\\KitnUI_Lite\\Media\\Textures\\KitnUI_Text")
     brandLogo:SetTexCoord(0, 1, 0.254, 0.746)
 
     -- Sidebar header
@@ -624,7 +624,7 @@ local function CreateInstallerFrame()
     local logo = content:CreateTexture(nil, "ARTWORK")
     logo:SetSize(220, 220)
     logo:SetPoint("BOTTOM", content, "BOTTOM", 0, 78)
-    logo:SetTexture("Interface\\AddOns\\KitnUI_Lite\\KitnUI")
+    logo:SetTexture("Interface\\AddOns\\KitnUI_Lite\\Media\\Textures\\KitnUI")
     content.logo = logo
 
     local subtitle = content:CreateFontString(nil, "OVERLAY")
