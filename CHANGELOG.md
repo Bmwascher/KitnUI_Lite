@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.2.1
+- Grid2: Fixed missing health background color on Healer Colored profile
+- Grid2: Minor text adjustments on Healer Colored and Healer Dark profiles
+- Updated Blizzard Edit Mode profile string
+
 ## v2.2.0
 - UUF: Added Healer Colored and Healer Dark profiles
 - UUF: Choosing Colored or Dark now installs both DPS and Healer profiles in one click
