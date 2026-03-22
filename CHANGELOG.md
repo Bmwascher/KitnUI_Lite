@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.2
+- Grid2: Fixed dispels not showing on Healer Colored and Healer Dark profiles
+
 ## v2.2.1
 - Grid2: Fixed missing health background color on Healer Colored profile
 - Grid2: Minor text adjustments on Healer Colored and Healer Dark profiles

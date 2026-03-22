@@ -19,7 +19,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 | Addon | Profile Type |
 |---|---|
 | Blizzard Edit Mode | HUD layout, Buffs & Debuffs Positioning, etc. |
-| Unhalted Unit Frames | Colored / Dark variants |
+| Unhalted Unit Frames | Colored / Dark variants (DPS + Healer profiles with spec-based loading) |
 | Grid2 | Colored / Dark variants (DPS + Healer profiles with auto spec switching) |
 | Details! Damage Meter | Meter layout & appearance |
 | Plater Nameplates | Nameplate styling |
