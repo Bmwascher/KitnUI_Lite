@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.3
+- UUF: Minor profile adjustments
+
 ## v2.2.2
 - Grid2: Fixed dispels not showing on Healer Colored and Healer Dark profiles
 
