@@ -5,7 +5,7 @@ local _, ns = ...
 ------------------------------------------------------------
 
 local FRAME_WIDTH = 560
-local FRAME_HEIGHT = 504
+local FRAME_HEIGHT = 528
 local SIDEBAR_WIDTH = 195
 local NAV_HEIGHT = 50
 
@@ -240,6 +240,11 @@ GetPages = function()
             title = "KitnEssentials",
             addon = "KitnEssentials",
             setup = SimpleInstallPage("KitnEssentials", "Import the KitnUI profile for KitnEssentials.", "KitnEssentials"),
+        },
+        {
+            title = "BuffReminders",
+            addon = "BuffReminders",
+            setup = SimpleInstallPage("BuffReminders", "Import the KitnUI profile for BuffReminders.", "BuffReminders"),
         },
         {
             title = "BasicMinimap",

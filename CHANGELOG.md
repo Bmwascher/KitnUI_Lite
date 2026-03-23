@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.0
+- Added BuffReminders addon support
+- Fixed KitnEssentials import creating duplicate profiles instead of overwriting
+- Updated KitnEssentials and BuffReminders profile data
+
 ## v2.2.3
 - UUF: Minor profile adjustments
 

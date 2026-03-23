@@ -781,23 +781,82 @@ setupFunctions["KitnEssentials"] = function(addonKey, import)
             return
         end
 
-        -- If KitnEssentials is loaded, use its API for a live import
-        if KitnEssentialsAPI and KitnEssentialsAPI.ImportProfile then
-            KitnEssentialsAPI:ImportProfile(ns.data[addonKey], ns.profileName)
-        else
-            -- Write directly to SavedVariables for next reload
-            KitnEssentialsDB = KitnEssentialsDB or { profiles = {} }
-            KitnEssentialsDB.profiles = KitnEssentialsDB.profiles or {}
-            KitnEssentialsDB.profiles[ns.profileName] = ns.data[addonKey]
+        local API = _G.KitnEssentialsAPI
+        if not API or not API.DecodeProfileString then
+            print(ns.title .. ": KitnEssentials API not available.")
+            return
+        end
+
+        -- Decode the string, then write directly to the SavedVariable to avoid duplication
+        local profileData = API:DecodeProfileString(ns.data[addonKey])
+        if not profileData or not next(profileData) then
+            print(ns.title .. ": KitnEssentials decode failed.")
+            return
+        end
+
+        KitnEssentialsDB = KitnEssentialsDB or {}
+        KitnEssentialsDB.profiles = KitnEssentialsDB.profiles or {}
+        KitnEssentialsDB.profiles[ns.profileName] = profileData
+
+        -- Set profileKey for this character
+        local charKey = UnitName("player") .. " - " .. GetRealmName()
+        KitnEssentialsDB.profileKeys = KitnEssentialsDB.profileKeys or {}
+        KitnEssentialsDB.profileKeys[charKey] = ns.profileName
+
+        -- Activate the profile via AceDB
+        local KE_addon = _G.KitnEssentials
+        if KE_addon and KE_addon.db then
+            KE_addon.db:SetProfile(ns.profileName)
         end
 
         CompleteSetup(addonKey)
         return
     end
 
-    -- Load: activate the profile if it exists
-    if KitnEssentialsAPI and KitnEssentialsAPI.SetProfile then
-        KitnEssentialsAPI:SetProfile(ns.profileName)
+    -- Load: activate existing profile
+    local API = _G.KitnEssentialsAPI
+    if API and API.SetProfile then
+        API:SetProfile(ns.profileName)
+    end
+end
+
+------------------------------------------------------------
+-- BuffReminders (AceDB - uses BR:Import/SetProfile API)
+-- Export string starts with "!BR_"
+------------------------------------------------------------
+
+setupFunctions["BuffReminders"] = function(addonKey, import)
+    if import then
+        if not HasData(addonKey) then
+            print(ns.title .. ": No BuffReminders data found. Add your export string to Data.lua.")
+            return
+        end
+
+        if not C_AddOns.IsAddOnLoaded("BuffReminders") then
+            print(ns.title .. ": BuffReminders is not loaded.")
+            return
+        end
+
+        local BR = _G.BuffReminders
+        if not BR or not BR.Import then
+            print(ns.title .. ": BuffReminders API not available.")
+            return
+        end
+
+        local success, err = BR:Import(ns.data[addonKey], ns.profileName)
+        if success then
+            BR:SetProfile(ns.profileName)
+            CompleteSetup(addonKey)
+        else
+            print(ns.title .. ": BuffReminders import failed - " .. (err or "unknown error"))
+        end
+        return
+    end
+
+    -- Load: activate existing profile
+    local BR = _G.BuffReminders
+    if BR and BR.SetProfile then
+        BR:SetProfile(ns.profileName)
     end
 end
 
