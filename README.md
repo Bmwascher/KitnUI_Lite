@@ -32,6 +32,7 @@ KitnUI Lite walks you through setting up a complete UI with pre-configured profi
 | Minimap Stats | Square / Circle shape |
 | Blizzard CDM | Per-spec cooldown layouts |
 | KitnEssentials | Modular combat, skinning, and QoL enhancements — every element draggable, every module toggleable |
+| BuffReminders | Buff tracking and reminder configuration |
 
 ## Slash Commands
 

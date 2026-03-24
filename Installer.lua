@@ -179,11 +179,15 @@ GetPages = function()
                 content.option1:Show()
                 content.option1.text:SetText("Install")
                 content.option1:SetScript("OnClick", function()
-                    ns.SetupAddon("Blizzard_EditMode", true)
-                    ShowImportStatus(content, "Blizzard_EditMode")
-                    PlayInstallSound()
-                    content.status:SetText("|cff00ff00Installed!|r")
-                    UpdateStepButtons(GetPages())
+                    local success = ns.SetupAddon("Blizzard_EditMode", true)
+                    if success == false then
+                        content.status:SetText("|cffff5555Layout limit reached (5). Delete a layout and try again.|r")
+                    else
+                        ShowImportStatus(content, "Blizzard_EditMode")
+                        PlayInstallSound()
+                        content.status:SetText("|cff00ff00Installed!|r")
+                        UpdateStepButtons(GetPages())
+                    end
                 end)
             end,
         },
@@ -324,7 +328,7 @@ GetPages = function()
                             if specData and strtrim(specData) ~= "" then
                                 btn:SetAlpha(1)
                                 btn:SetScript("OnClick", function()
-                                    ns.SetupAddon("BlizzardCDM", true, i)
+                                    local success = ns.SetupAddon("BlizzardCDM", true, i)
                                     -- Refresh status
                                     local parts = {}
                                     for j = 1, numSpecs do
@@ -333,10 +337,15 @@ GetPages = function()
                                             parts[#parts + 1] = sn .. ": " .. GetCDMSpecStatus(j)
                                         end
                                     end
-                                    content.desc2:SetText(table.concat(parts, " | "))
-                                    PlayInstallSound()
-                                    content.status:SetText("|cff00ff00" .. (specName or "Spec") .. " layout installed!|r")
-                                    UpdateStepButtons(GetPages())
+                                    if success == false then
+                                        content.desc2:SetText("|cffff5555Layout limit reached. Delete a layout and try again.|r")
+                                        content.status:SetText("|cffff5555Layout limit reached!|r")
+                                    else
+                                        content.desc2:SetText(table.concat(parts, " | "))
+                                        PlayInstallSound()
+                                        content.status:SetText("|cff00ff00" .. (specName or "Spec") .. " layout installed!|r")
+                                        UpdateStepButtons(GetPages())
+                                    end
                                 end)
                             else
                                 btn:SetAlpha(0.35)

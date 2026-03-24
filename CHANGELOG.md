@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.3.1
+- Details: Fixed auto-run scripts not importing (zone-based window switching)
+- Details: Added PLAYER_LOGOUT handler to persist auto-run scripts across sessions
+- Edit Mode: Added layout limit check (max 5) with error feedback
+- Blizzard CDM: Added max layout check, deferred activation, and error feedback
+- Old Details installs will show as needing update until re-imported
+
 ## v2.3.0
 - Added BuffReminders addon support
 - Fixed KitnEssentials import creating duplicate profiles instead of overwriting
